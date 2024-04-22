@@ -157,7 +157,7 @@
 
     <div class="floating-window">
         <div class="window-header">
-            <div class="window-title">천안오성고등학교 일본어I 소니가나 게임</div>
+            <div class="window-title">천안오성고등학교 소니가나 게임</div>
             <div class="window-controls">
                 <div class="window-minimize"></div>
                 <div class="window-maximize"></div>
@@ -165,154 +165,21 @@
             </div>
         </div>
         <div id="window-content">
-            <div id="game-board">
-                <div id="timer"></div>
-                <div id="game-score"></div>
-                <div id="game-over-message" style="display: none;"></div>
-            </div>
-            <input type="text" id="user-input" style="display: none;" placeholder="히라가나 입력 ..">
-            <button class="btn" id="play-again-btn" style="display: none;">다시 시작</button>
+            <br>
+            made by 송이쌤 ! :)
+            
+            <br>
+            <br>
+            <a href="hiragana.html" class="btn">일본어</a><br>
+            <a href="hanmun.html" class="btn">한문</a>
+
+            
+            
         </div>
     </div>
     </div>
 
-    <script>
-        const gameBoard = document.getElementById('game-board');
-        const timerElement = document.getElementById('timer');
-        const userInput = document.getElementById('user-input');
-        const gameScore = document.getElementById('game-score');
-        const gameOverMessage = document.getElementById('game-over-message');
-        const playAgainBtn = document.getElementById('play-again-btn');
-        const wordSpeed = 0.5; // 산성비 내리는 속도
-        const wordsPerSecond = 1; // 몇초에 하나씩 ?
-        const gameDuration = 30; // 게임 시간 30초
-        let score = 0;
-        let gameTimer;
-        let gameDurationTimer;
-        let t = 0;
-
-        // 히라가나
-        const jl = ['あかい', 'いえ', 'えき', 'かお', 'いす', 'すし', 'しち', 'ちかてつ', 'つくえ', 'いぬ', 'ねこ', 'はち', 'ひと', 'みせ', 'なまえ', 'やさい', 'ふゆ', 'ふろ', 'ろく', 'くすり', 'にわ', 'わたし', 'しろい', 'ほん', 'よん', 'かぞく', 'ぶかつ', 'ここ', 'ごご', 'あし', 'あじ', 'いしゃ', 'きゅう', 'じゅう', 'じゆう', 'りよう', 'りょうり', 'がっこう', 'けっせき', 'きって', 'いっぱい', 'きて', 'おと', 'おっと', 'にほん', 'かんこく', 'ちゅうごく', 'はじめまして', 'ちち', 'はは', 'あね', 'あに', 'いもうと', 'おとうと', 'うち', 'ただいま', 'おかえり', 'おみやげ', 'こちら', 'こちらこそ', 'ちゅうがく', 'だいがく', 'どうも ありがとう', 'これから', 'いちねんかん', 'どうぞ', 'いってらっしゃい', 'いって きます', 'とこのま', 'たたみ', 'いま', 'なに', 'なん', 'えいご', 'しゅみ', 'りょこう', 'じゅく', 'ゆうびんきょく', 'ぎんこう', 'すいえい', 'きょうしつ', 'さんじゅっぷん', 'はん', 'えいが', 'やきゅう', 'まだ', 'つぎだよ', 'ぼくだち', 'おんがくしつ', 'きょねん', 'まいとし', 'ぶんかさい', 'れんしゅう', 'にんき', 'げつようび', 'みなさん', 'すいようび', 'じかん', 'ばしょ', 'ぜひ', 'かようび', 'どようび', 'にちようび', 'としょかん', 'おじゃまします', 'もくようび', 'きんようび', 'やすい', 'あつい', 'むずかしい', 'おもしろい', 'きょうと', 'ほんとうに', 'この', 'ひとつ', 'ふたつ', 'みっつ', 'ください', 'はい', 'りんご', 'いちご', 'すごい', 'のみもの', 'かんこくご', 'からい', 'すみません', 'しょうゆ', 'うん', 'うまい', 'さむい', 'あの', 'たかい', 'やさしい', 'そば', 'おこのみやき', 'どんぶり', 'おでん', 'なっとう'];
-
-        function updateTimer(time) {
-            timerElement.textContent = `남은 시간 : ${time} 초`;
-        }
-
-        function generateWord() {
-            const word = jl[Math.floor(Math.random() * jl.length)];
-            const wordElement = document.createElement('div');
-            t += 1;
-            if (t % 3 == 0) {
-                wordElement.style.backgroundColor = "#FFFF96";
-            }
-            else if (t % 3 == 1) {
-                wordElement.style.backgroundColor = "#FFD1B7";
-            }
-            else {
-                wordElement.style.backgroundColor = "#AFFFEE";
-            }
-            wordElement.textContent = word;
-            wordElement.classList.add('word');
-            wordElement.dataset.word = word;
-            wordElement.style.left = `${Math.random() * (gameBoard.clientWidth - 100)}px`;
-            gameBoard.appendChild(wordElement);
-            let top = 0;
-            function moveWord() {
-                if (top < gameBoard.clientHeight) {
-                    top += wordSpeed;
-                    wordElement.style.top = `${top}px`;
-                    requestAnimationFrame(moveWord);
-                } else {
-                    wordElement.remove();
-                }
-            }
-            moveWord();
-        }
-
-        function startGame() {
-            score = 0;
-            userInput.style.display = 'block';
-            gameScore.textContent = `점수 : ${score}`;
-            updateTimer(gameDuration);
-            gameTimer = setInterval(generateWord, 1000 / wordsPerSecond);
-            let remainingTime = gameDuration;
-            gameDurationTimer = setInterval(() => {
-                remainingTime--;
-                if (remainingTime >= 0) {
-                    updateTimer(remainingTime);
-                } else {
-                    gameOver();
-                }
-            }, 1000);
-            document.addEventListener('keydown', wordKeydownHandler);
-            userInput.addEventListener('keydown', userInputKeydownHandler);
-        }
-
-        function gameOver() {
-            clearInterval(gameTimer);
-            clearInterval(gameDurationTimer);
-            document.removeEventListener('keydown', wordKeydownHandler);
-            userInput.removeEventListener('keydown', userInputKeydownHandler);
-            gameOverMessage.textContent = `게임 종료 !! 당신의 점수는 ${score}점 입니다. `;
-            gameOverMessage.style.display = 'block';
-            playAgainBtn.style.display = 'block';
-            userInput.style.display = 'none';
-
-            // Remove all word elements from the game board
-            const wordElements = document.querySelectorAll('.word');
-            wordElements.forEach(wordElement => {
-                wordElement.remove();
-            });
-        }
-
-
-        function wordKeydownHandler(event) {
-            const pressedKey = event.key.toUpperCase();
-            const wordElements = document.querySelectorAll('.word');
-            for (let i = 0; i < wordElements.length; i++) {
-                const wordElement = wordElements[i];
-                const word = wordElement.dataset.word.toUpperCase();
-                if (pressedKey === word) {
-                    wordElement.remove();
-                    score++;
-                    gameScore.textContent = `점수 : ${score}`;
-                    break; // Stop loop after removing the first matching word
-                }
-            }
-        }
-
-        function userInputKeydownHandler(event) {
-            if (event.key === 'Enter') {
-                let inputWord = userInput.value.trim().toUpperCase(); // 앞뒤 공백 제거
-                const wordElements = document.querySelectorAll('.word');
-                for (let i = 0; i < wordElements.length; i++) {
-                    const word = wordElements[i].dataset.word.toUpperCase();
-                    if (inputWord === word) {
-                        wordElements[i].remove();
-                        score++;
-                        gameScore.textContent = `점수 : ${score}`;
-                        break;
-                    }
-                }
-                userInput.value = '';
-            }
-        }
-
-        playAgainBtn.addEventListener('click', () => {
-            gameOverMessage.style.display = 'none';
-            playAgainBtn.style.display = 'none';
-            startGame();
-        });
-
-        // Add a click event listener to start the game when the button is clicked
-        const startButton = document.createElement('button');
-        startButton.textContent = '게임 시작';
-        startButton.classList.add('btn');
-        startButton.addEventListener('click', () => {
-            startGame();
-            startButton.style.display = 'none'; // Hide the button once the game starts
-        });
-        document.getElementById('window-content').appendChild(startButton);
+    
 
 
     </script>

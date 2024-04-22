@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SoniGana</title>
+    <style>
+        @font-face {
+            font-family: 'GmarketSansMedium';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'GmarketSansMedium';
+        }
+
+
+        body {
+            background-color: rgb(255, 237, 242);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .floating-window {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 550px;
+            /* 변경된 너비 */
+            background-color: #f6f6f6;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            z-index: 9999;
+        }
+
+
+        .window-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #e6e6e6;
+            border-bottom: 1px solid #d6d6d6;
+        }
+
+        .window-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .window-controls {
+            display: flex;
+        }
+
+        .window-minimize,
+        .window-maximize,
+        .window-close {
+            width: 12px;
+            height: 12px;
+            margin-left: 8px;
+            border-radius: 50%;
+        }
+
+        .window-minimize {
+            background-color: #f7d54a;
+        }
+
+        .window-maximize {
+            background-color: #62c462;
+        }
+
+        .window-close {
+            background-color: #ee5f5b;
+        }
+
+        #window-content {
+            padding: 12px;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #game-board {
+            width: 800px;
+            height: 417px;
+            overflow: hidden;
+            position: relative;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .word {
+            position: absolute;
+            font-size: 24px;
+        }
+
+        #timer {
+            margin-top: 10px;
+            margin-left: 20px;
+            font-size: 16px;
+            color: #ff0000;
+        }
+
+        #user-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        #game-score {
+            margin: 20px;
+            font-size: 16px;
+            color: #00f;
+        }
+
+        #game-over-message {
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+            margin: 150px;
+        }
+
+        .btn {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="floating-window">
+        <div class="window-header">
+            <div class="window-title">천안오성고등학교 한문 소니가나 게임</div>
+            <div class="window-controls">
+                <div class="window-minimize"></div>
+                <div class="window-maximize"></div>
+                <div class="window-close"></div>
+            </div>
+        </div>
+        <div id="window-content">
+            <div id="game-board">
+                <div id="timer"></div>
+                <div id="game-score"></div>
+                <div id="game-over-message" style="display: none;"></div>
+            </div>
+            <input type="text" id="user-input" style="display: none;" placeholder="音 입력 ..">
+            <button class="btn" id="play-again-btn" style="display: none;">다시 시작</button>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        const gameBoard = document.getElementById('game-board');
+        const timerElement = document.getElementById('timer');
+        const userInput = document.getElementById('user-input');
+        const gameScore = document.getElementById('game-score');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const wordSpeed = 0.5; // 산성비 내리는 속도
+        const wordsPerSecond = 2; // 몇초에 하나씩 ?
+        const gameDuration = 30; // 게임 시간 30초
+        let score = 0;
+        let gameTimer;
+        let gameDurationTimer;
+        let t = 0;
+
+        // 히라가나
+        const hanja = ['一','二','三','四','五','六','七','八','九','十','月','火','水','木','金','','土','日','父','母','兄','弟','女','人','外','寸','東','西','南','北','靑','白','山','軍','大','韓','民','國','中','小','萬','王','校','長','先','生','學','年','敎','室','門'];
+        const um = ['일','이','삼','사','오','육','칠','팔','구','십','월','화','수','목','금','김','토','일','부','모','형','제','녀','인','외','촌','동','서','남','북','청','백','산','군','대','한','민','국','중','소','만','왕','교','장','선','생','학','년','교','실','문'];
+
+        function updateTimer(time) {
+            timerElement.textContent = `남은 시간 : ${time} 초`;
+        }
+
+        function generateWord() {
+            const word = hanja[Math.floor(Math.random() * hanja.length)];
+            const wordElement = document.createElement('div');
+            t += 1;
+            if (t % 3 == 0) {
+                wordElement.style.backgroundColor = "#FFFF96";
+            }
+            else if (t % 3 == 1) {
+                wordElement.style.backgroundColor = "#FFD1B7";
+            }
+            else {
+                wordElement.style.backgroundColor = "#AFFFEE";
+            }
+            wordElement.textContent = word;
+            wordElement.classList.add('word');
+            wordElement.dataset.word = word;
+            wordElement.style.left = `${Math.random() * (gameBoard.clientWidth - 100)}px`;
+            gameBoard.appendChild(wordElement);
+            let top = 0;
+            function moveWord() {
+                if (top < gameBoard.clientHeight) {
+                    top += wordSpeed;
+                    wordElement.style.top = `${top}px`;
+                    requestAnimationFrame(moveWord);
+                } else {
+                    wordElement.remove();
+                }
+            }
+            moveWord();
+        }
+
+        function startGame() {
+            score = 0;
+            userInput.style.display = 'block';
+            gameScore.textContent = `점수 : ${score}`;
+            updateTimer(gameDuration);
+            gameTimer = setInterval(generateWord, 1000 / wordsPerSecond);
+            let remainingTime = gameDuration;
+            gameDurationTimer = setInterval(() => {
+                remainingTime--;
+                if (remainingTime >= 0) {
+                    updateTimer(remainingTime);
+                } else {
+                    gameOver();
+                }
+            }, 1000);
+            document.addEventListener('keydown', wordKeydownHandler);
+            userInput.addEventListener('keydown', userInputKeydownHandler);
+        }
+
+        function gameOver() {
+            clearInterval(gameTimer);
+            clearInterval(gameDurationTimer);
+            document.removeEventListener('keydown', wordKeydownHandler);
+            userInput.removeEventListener('keydown', userInputKeydownHandler);
+            gameOverMessage.textContent = `게임 종료 !! 당신의 점수는 ${score}점 입니다. `;
+            gameOverMessage.style.display = 'block';
+            playAgainBtn.style.display = 'block';
+            userInput.style.display = 'none';
+
+            // Remove all word elements from the game board
+            const wordElements = document.querySelectorAll('.word');
+            wordElements.forEach(wordElement => {
+                wordElement.remove();
+            });
+        }
+
+
+        function wordKeydownHandler(event) {
+            const pressedKey = event.key.toUpperCase();
+            const wordElements = document.querySelectorAll('.word');
+            for (let i = 0; i < wordElements.length; i++) {
+                const wordElement = wordElements[i];
+                const word = wordElement.dataset.word.toUpperCase();
+                if (pressedKey === word) {
+                    wordElement.remove();
+                    score++;
+                    gameScore.textContent = `점수 : ${score}`;
+                    break; // Stop loop after removing the first matching word
+                }
+            }
+        }
+
+        function userInputKeydownHandler(event) {
+            if (event.key === 'Enter') {
+                let inputWord = userInput.value.trim().toUpperCase(); // 앞뒤 공백 제거
+                const wordElements = document.querySelectorAll('.word'); // 한자
+                //um.indexOf(inputWord)
+                for (let i = 0; i < wordElements.length; i++) {
+                    const word = wordElements[i].dataset.word.toUpperCase();
+
+                    if (hanja[um.indexOf(inputWord)] === word) {
+                        wordElements[i].remove();
+                        score++;
+                        gameScore.textContent = `점수 : ${score}`;
+                        break;
+                    }
+                }
+                userInput.value = '';
+            }
+        }
+
+        playAgainBtn.addEventListener('click', () => {
+            gameOverMessage.style.display = 'none';
+            playAgainBtn.style.display = 'none';
+            startGame();
+        });
+
+        // Add a click event listener to start the game when the button is clicked
+        const startButton = document.createElement('button');
+        startButton.textContent = '게임 시작';
+        startButton.classList.add('btn');
+        startButton.addEventListener('click', () => {
+            startGame();
+            startButton.style.display = 'none'; // Hide the button once the game starts
+        });
+        document.getElementById('window-content').appendChild(startButton);
+
+
+    </script>
+</body>
+
+</html>
