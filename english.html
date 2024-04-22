@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SoniGana</title>
+    <style>
+        @font-face {
+            font-family: 'GmarketSansMedium';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'GmarketSansMedium';
+        }
+
+
+        body {
+            background-color: rgb(255, 237, 242);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .floating-window {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 550px;
+            /* 변경된 너비 */
+            background-color: #f6f6f6;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            z-index: 9999;
+        }
+
+
+        .window-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #e6e6e6;
+            border-bottom: 1px solid #d6d6d6;
+        }
+
+        .window-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .window-controls {
+            display: flex;
+        }
+
+        .window-minimize,
+        .window-maximize,
+        .window-close {
+            width: 12px;
+            height: 12px;
+            margin-left: 8px;
+            border-radius: 50%;
+        }
+
+        .window-minimize {
+            background-color: #f7d54a;
+        }
+
+        .window-maximize {
+            background-color: #62c462;
+        }
+
+        .window-close {
+            background-color: #ee5f5b;
+        }
+
+        #window-content {
+            padding: 12px;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #game-board {
+            width: 800px;
+            height: 417px;
+            overflow: hidden;
+            position: relative;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .word {
+            position: absolute;
+            font-size: 15px;
+        }
+
+        #timer {
+            margin-top: 10px;
+            margin-left: 20px;
+            font-size: 16px;
+            color: #ff0000;
+        }
+
+        #user-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        #game-score {
+            margin: 20px;
+            font-size: 16px;
+            color: #00f;
+        }
+
+        #game-over-message {
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+            margin: 150px;
+        }
+
+        .btn {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="floating-window">
+        <div class="window-header">
+            <div class="window-title">천안오성고등학교 영어 소니가나 게임</div>
+            <div class="window-controls">
+                <div class="window-minimize"></div>
+                <div class="window-maximize"></div>
+                <div class="window-close"></div>
+            </div>
+        </div>
+        <div id="window-content">
+            <div id="game-board">
+                <div id="timer"></div>
+                <div id="game-score"></div>
+                <div id="game-over-message" style="display: none;"></div>
+            </div>
+            <input type="text" id="user-input" style="display: none;" placeholder="영어 입력 ..">
+            <button class="btn" id="play-again-btn" style="display: none;">다시 시작</button>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        const gameBoard = document.getElementById('game-board');
+        const timerElement = document.getElementById('timer');
+        const userInput = document.getElementById('user-input');
+        const gameScore = document.getElementById('game-score');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const wordSpeed = 0.3; // 산성비 내리는 속도
+        const wordsPerSecond = 1; // 몇초에 하나씩 ?
+        const gameDuration = 60; // 게임 시간 30초
+        let score = 0;
+        let gameTimer;
+        let gameDurationTimer;
+        let t = 0;
+
+        // 영어 뜻 - 단어
+        const mean = ['~을 대표하여', '설립하다', '존중하다', '대우하다', '보호하다', '제공하다', '길 잃은', '보호', '건강관리', '현재', '보호소', '구하다', '기부금', '어떤 금액이든', '모금하다', '도움이 필요한', '기부하다', '고려하다', '지원하다', '일어나 앉다', '수평선', '악몽', '지느러미', '해변', '떨다', '꽉 쥐다', '마음속으로', '~을 떨쳐내다, 놓다', '두려움', '공포', '한평생', '편안한', '밖으로 내다', '만족스러운', '한숨', '파도', '형제자매', '경쟁, 대립 관계', '자연스러운', '특히', '호의적이지 않게', '서로', '왜냐하면 ~하기 때문에', '~을 찾다', '경쟁의', '우위, 이점', '문제', '결승선을 통과하다', '매우, 중대하게', '체계적으로', '동료', '능력', '민감한', '실패', '따라서', '~에 대해 경계하다', '비교하는, 비교의', '발언, 언급, 논평', '일상적으로', '위반하다, 어기다', '원칙', '만들다, 세우다', '작가', '우화', '성자', '명상', '막 ~할 때', '신도, 추종자', '~에 빠져들다', '선(禪)의 순간', '방해하다', '사원', '야옹하다', '귀찮게 하다, 괴롭히다', '생각해내다', '해결책', '기둥', '시간', '~로 발전하다', '의식', '결국', '자연스러운 원인', '종교적인', '위기', '~해야 한다', '과연', '명상하다', '보여주다', '보이지 않는', '행동', '불필요하게', '굳게 하다', '~에 저항하는', '완고한', '침묵의 살인자', '~에 관해 말하자면', '결정', '~와 유사한', '헬스클럽', '회원권', '고수하다', '이행하다, 충족하다', '다짐', '장기적으로', '다짐하다', '일상', '~할 가능성이 더 높은', '제공하다', '결과', '~로 이어지다', '창의성', '한 단계 더 나아간 것', '상상력', '오로지, 전적으로', '사적인', '과정', '내적인, 내면의', '의식', '움직임이 없는', '흥분, 흥분된 상태', '결과', '창의적인', '수반하다, 포함하다', '이상한', '묘사하다', '암시하다, 나타내다', '적극적으로', '만들어내다', '의도적인', '추상적인', '공학', '어떤 면에서', '적용된, 응용된', '기자', '문장', '머리기사', '담고 있다, 포함하다', '본질적인', '요소', '전하다', '제시하다', '감소하는', '순서', '언론인', '역 피라미드', '구조', '~가 무엇이든지 간에', '주의 지속 시간', '전체의', '극대화하다', '대안', '수수께끼', '극적인', '결말, 좋은 결과', '(갑자기) 중단하다', '요점을 놓치다', '알아내다', '대통령의', '선거', '도표', '전 세계적으로', '각각', '차이, 격차', '양', '생산', '10억', '세제곱', '순위를 기록하다', '비록 ~일지라도', '3배', '포함하다', '~사이에, 중에', '고아가 되게 하다', '기르다, 양육하다', '영감을 주다', '교수', '경력', '편집하다', '연간의', '모음집', '단편 소설', '출판하다', '소설', '논픽션, 소설이 아닌 글', '어른', '받다', '상', '체험', '약속하다', '영감을 불어넣다', '놀라운', '발견', '참가비', '알림', '~가 동행하다', '재료', '오락거리', '세부 사항', '구매하다', '~에 참석하다', '허용하다', '사진 촬영', '동영상 녹화', '금지하다', '공연', '연구, 조사', '동료', '수행하다, 실행하다', '실험', '놓다, 넣다, 두다', '막대기', '끼워 넣다', '~할 때 마다', '제공하다, 주다', '자동으로', '기록하다', '처음에', '우연히', '호기심에서', '그 결과로', '받다', '시간이 지나면서', '일부러, 의도적으로', '비교하다', '결과', '긍정적인', '강화', '비율', '분명한', '~에 영향을 미치다', '~로 되돌아가다', '사진', '실물처럼 생생한 색깔', '기간', '부르다, 칭하다', '가능성', '존재하다', '불필요한', '삽입하다', '형용사', '가정하다', '어구', '존재', '강조하다', '현실', '~을 의식하는', '현재의', '한계', '따라서', '잠재적인', '기회', '교전 중인, 전투 중인', '끔찍한', '시기', '더 나쁘게는', '~하면 어떻게 되나?', '명칭', '세계적인', '충돌', '예측할 수 없는', '정부', '개인', '문제', '명시적으로', '인지하다, 식별(분간)하다', '경향', '구매하다', '~로 이어지다', '디드로 효과(하나의 물건을 구입한 후 그 물건과 어울리는 다른 제품들을 계속 구매하는 현상)', '말하다, 진술하다', '얻다', '소유(물)', '소용돌이', '소비', '추가적인', '발견하다', '구걸이', '~와 어울리다', '액세서리', '~와 어울리다', '연쇄 반응', '순환', '~에 근거해', '생각나게 하다', '세탁물, 세탁소', '세제', '기타 등등', '고립', '신호', '유발하다', '~에 직면하다', '거대한', '압박', '섣부른', '주된 원인', '실패', '주로', '~에 반응하다', '피상적인', '탐색하다', '근원적인', '~에 직면하여', '다양한', '경제적인', '침체', '정확성', '제조', '하락', '수입', '고위 지도자', '선호하다', '해고', '삭감, 감소', '밀어붙이다', '요청하다', '투표', '완화하다, 경감하다', '긴장', '압박', '검토하다', '마침내', '철저하게', '영향', '~을 하다', '해치다', '가능성', '성공하다', '의도적으로', '~라고 가정해보자', '적당한', '결론을 내리다', '~을 잘하다', '꽤 큰 타격', '입장, 처지', '~을 못하다', '역설', '의도적으로', '해치다', '학기', '교수', '투영하다', '수도승', '보는 이를 등지고', '~쪽을 바라보다', '거대한', '어두워진', '강당', '조용한', '밝혀내다, 발굴하다', '생각해내다', '~했음에 틀림없다', '극심한, 극적인', '분노', '편견', '제시하다', '밝히다, 드러내다', '추측하다', '현상', '개념', '증거', '받아들이다', '행사하다, 발휘하다', '또래 압력', '의존하다', '신뢰', '판단', '가까운', '논란', '그 자체로', '신뢰할 수 있는', '표현하다', '비언어적인', '신호', '표정', '추천하다', '신뢰도', '제시하다', '~와 정비례하여', '이유', '게시물', '입소문이 나는, 전염성의', '싸우다, 말다툼하다', '논쟁하다, 주장하다', '왔다갔다하면서, 앞뒤로', '작은 틈새', '중간, 절반', '사서', '해결책', '~에 집중하다', '진술된, 언급된', '입장', '그 대신', '살펴보다, ~에 주의를 기울이다', '근원적인', '이해관계', '외풍', '~에 전형적인', '협상', '당사자', '충돌', '자연히', '막다름, 교착 상태', '만족시키다', '조사', '지지하다', '정부', '지원, 후원', '그러므로', '~의 형식을 만들어내다, 짜맞추다', '크게', '영향을 미치다', '중요하다', '목표', '얻다', '척도', '정치가', '입증하다', '대다수의', '조심하는, 경계하는', '모집단', '복지', '찬성하는', '다시 말해', '개별적인', '재정적인', '소득', '대체로', '~을 찬성하는', '지칭하다, 언급하다', '정확한', '열거하다', '~에 반대하는', '부정적인', '함축된 의미, 함의', '묘사하다', '이전', '위험', '물려받다', '일어나다, 발생하다', '불확실성', '접근하다', '피하다', '계약하다', '숙련된, 경험이 많은', '최소화하다', '재정적인', '~와 관련된', '자본 비용', '도구', '장비', '복잡한', '제조업자', '하청을 주다', '부품', '공급업자', '~에 정통한, ~을 잘 아는', '~에 의존하다', '외부 업자', '품질 관리', '일정 관리', '성능', '줄이다', '관리', '경쟁사', '~에 감명을 받은', '놀라운', '분량', '말 없는 마차', '가속하다', '제조 과정', '조립 라인', '가속', '전례가 없는', '생산량', '자동차', '인상적인', '개선하다', '도입하다', '컨베이어 벨트', '그 결과', '최고조에 달하다, 급등하다', '과거처럼', '내뱉다', '~의 속도로', '교훈', '진보', '선구자', '1차적인, 초기의, 주요한', '의사', '개선하다', '직원', '의지력', '동기', '약간의, 조금의', '바꾸다', '건축, 건축 방식', '구내식당', '배열하다', '원래', '~에 위치한', '금전등록기', '추가하다', '선택 사항', '게다가', '생수, 병에 든 물', '음식을 두는 곳', '전 ~에 걸쳐', '본래의, 원래의, 최초의', '이용 가능한', '위치', '떨어지다', '한편, 반면에', '마비', '분석', '상태', '과도한 생각', '분석하다', '특정한', '여전히, 그럼에도', '결정하다', '고대의, 오래된', '우화', '설명하다', '상황', '논의하다', '피하다', '잡히다', '완벽하게', '설명하다, 보여주다', '현상', '~때문에', '이용 가능한', '대안', '의도', '해결책', '무한히, 무한정', '다양한', '요인', '~로 이어지다', '~에 만족한', '발생하다, 일어나다', '잘못된', '잠재적인', '재앙적인', '결과', '~에 영향을 미치다', '경력', '생산성', '일반적으로', '자신감 있는', '수반하다, 포함하다', '막대한 이해관계', '~에 지원하다', '일자리', '사무실 청소부', '비품 쌓기, 비축하기', '보급하다', '지정하다', '부서', '관찰하다', '서류', '작성하다', '가가호호 방문', '성공하다', '자본금', '반복하다', '작업', '깨닫다', '살아남다', '세 배', '얼마 지나지 않아', '손수레, 쇼핑 카트', '한 회사의 전체 보유 차량', '배달 차량', '대답하다', '~도 역시 아니다', '덧붙이다', '요구하다, 필요로 하다', '고용하다', '아무 희망도 없이', '몇 년 후', '생명 보험', '보험 중개인', '대화', '끝마치다', '의아해하며, 이상한 듯이', '그러나', '제국', '잠시 동안'];
+        const eng = ['on behalf of', 'found', 'respect', 'treat', 'protect', 'provide', 'lost', 'protection', 'health care', 'currently', 'shelter', 'seek', 'donation', 'in any amount', 'raise', 'in need', 'donate', 'consider', 'support', 'sit up', 'horizon', 'nightmare', 'fin', 'shore', 'shiver', 'grip', 'to oneself', 'let go of', 'fear', 'terror', 'lifetime', 'at east', 'let out', 'contented', 'sigh', 'wave', 'sibling', 'rivalry', 'natural', 'especially', 'unfavorably', 'each other', 'since', 'look for', 'competitive', 'advantage', 'issue', 'cross the finish line', 'vitally', 'systematically', 'peer', 'ability', 'sensitive', 'failure', 'accordingly', 'guard against', 'comparative', 'comment', 'routinely', 'violate', 'principle', 'set up', 'author', 'fable', 'saint', 'meditation', 'just as', 'follower', 'drop into', 'zen moment', 'disrupt', 'temple', 'meow', 'bother', 'come up with', 'solution', 'pole', 'session', 'develop into', 'ritual', 'eventually', 'natural cause', 'religious', 'crisis', 'be supposed to', 'possibly', 'meditate', 'illustrate', 'invisible', 'behavior', 'unnecessarily', 'rigidify', 'resistant to', 'stubborn', 'silent killer', 'when it comes to', 'decision', 'similar to', 'gym', 'membership', 'stick to', 'meet', 'commitment', 'in the long run', 'make a commitment', 'routine', 'more likely to', 'offer', 'result', 'lead to', 'creativity', 'a step further on', 'imagination', 'entirely', 'private', 'process', 'internal', 'consciousness', 'motionless', 'fever', 'outcome', 'creative', 'involve', 'odd', 'describe', 'suggest', 'actively', 'produce', 'deliberate', 'abstract', 'engineering', 'in a sense', 'applied', 'reporter', 'sentence', 'lead', 'contain', 'essential', 'element', 'convey', 'present', 'decreasing', 'order', 'journalist', 'inverted pyramid', 'structure', 'no matter what', 'attention span', 'entire', 'maximize', 'alternative', 'mystery', 'dramatic', 'payoff', 'break off', 'miss the point', 'find out', 'presidential', 'election', 'table', 'worldwide', 'respectively', 'gap', 'amount', 'production', 'billion', 'cubic', 'rank', 'even though', 'three times', 'include', 'among', 'orphan', 'raise', 'inspire', 'professor', 'career', 'edit', 'yearly', 'collection', 'short story', 'publish', 'fiction', 'nonfiction', 'adult', 'receive', 'award', 'experience', 'promise', 'inspire', 'amazing', 'discovery', 'participation fee', 'note', 'be accompanied by', 'material', 'entertainment', 'detail', 'purchase', 'attend', 'allow', 'photography', 'video recording', 'prohibit', 'performance', 'research', 'fellow', 'carry out', 'experiment', 'place', 'bar', 'fit', 'every time', 'present', 'automatically', 'record', 'initially', 'accidentally', 'out of curiosity', 'as a consequence', 'receive', 'over time', 'purposefully', 'compare', 'result', 'positive', 'reinforcement', 'rate', 'clear', 'influence', 'return to', 'photograph', 'living color', 'period', 'refer to', 'possibility', 'exist', 'unnecessary', 'insert', 'adjective', 'suppose', 'phrase', 'existence', 'highlight', 'reality', 'conscious of', 'current', 'limitation', 'thus', 'potential', 'opportunity', 'embattled', 'horrific', 'period', 'even worse', 'what if ~?', 'label', 'worldwide', 'conflict', 'unpredictable', 'government', 'individual', 'issue', 'explicitly', 'identify', 'tendency', 'purchase', 'lead to', 'Diderot Effect', 'state', 'obtain', 'possession', 'spiral', 'consumption', 'additional', 'spot', 'earring', 'match', 'accessory', 'go with', 'chain reaction', 'cycle', 'based on', 'remind', 'laundry', 'detergent', 'and so on', 'isolation', 'cue', 'trigger', 'face', 'enormous', 'pressure', 'premature', 'leading cause', 'failure', 'primarily', 'respond to', 'superficial', 'explore', 'underlying', 'in the face of', 'diverse', 'economic', 'downturn', 'precision', 'manufacturing', 'drop', 'revenue', 'senior leadership', 'favor', 'layoff', 'reduction', 'push for', 'call for', 'vote', 'ease', 'tension', 'pressure', 'examine', 'finally', 'thoroughly', 'implication', 'engage in', 'harm', 'chance', 'succeed', 'intentionally', 'say', 'decent', 'conclude', 'be good at', 'pretty hard blow', 'position', 'be bad at', 'paradox', 'deliberately', 'harm', 'term', 'professor', 'project', 'monk', 'his back to the viewer', 'look off into', 'enormous', 'darkened', 'auditorium', 'silent', 'unearth', 'come up with', 'must have p.p.', 'dramatic', 'exasperation', 'bias', 'pose', 'reveal', 'guess', 'phenomenon', 'concept', 'proof', 'accept', 'exert', 'peer pressure', 'rely on', 'trust', 'judgment', 'close', 'controversial', 'on its own', 'credible', 'express', 'nonverbal', 'cue', 'facial expression', 'recommend', 'credibility', 'present', 'in direct proportion to', 'reason', 'post', 'viral', 'quarrel', 'argue', 'back and forth', 'crack', 'halfway', 'librarian', 'solution', 'focus on', 'stated', 'position', 'instead', 'look to', 'underlying', 'interest', 'draft', 'typical of', 'negotiation', 'party', 'conflict', 'naturally', 'impasse', 'satisfy', 'survey', 'support', 'government', 'assistance', 'therefore', 'frame', 'heavily', 'influence', 'matter', 'aim', 'obtain', 'measure', 'politician', 'prove', 'the majority of', 'wary', 'population', 'welfare', 'in favor', 'in other words', 'individual', 'financial', 'income', 'broadly', 'in favor of', 'refer to', 'exact', 'list', 'against', 'negative', 'connotation', 'portray', 'transfer', 'risk', 'inherit', 'arise', 'uncertainty', 'approach', 'avoid', 'contract', 'experienced', 'minimize', 'financial', 'associated with', 'capital cost', 'tool', 'equipment', 'complex', 'manufacturer', 'subcontract', 'component', 'supplier', 'familiar with', 'rely on', 'outsider', 'quality control', 'scheduling', 'performance', 'reduce', 'management', 'competitor', 'in awe of', 'incredible', 'volume', 'horseless carriage', 'speed up', 'manufacturing process', 'assembly line', 'acceleration', 'unheard of', 'output', 'automobile', 'impressive', 'improve upon', 'introduce', 'conveyor belt', 'as a result', 'go through the roof', 'as in the past', 'spit out', 'at a rate of', 'moral', 'progress', 'herald', 'primary', 'physician', 'improve', 'staff', 'willpower', 'motivation', 'slight', 'alter', 'architecture', 'cafeteria', 'arrange', 'originally', 'located', 'cash register', 'add', 'option', 'additionally', 'bottled water', 'food station', 'throughout', 'primary', 'available', 'location', 'drop', 'meanwhile', 'paralysis', 'analysis', 'state', 'overthinking', 'analyze', 'particular', 'still', 'make a decision', 'ancient', 'fable', 'explain', 'situation', 'discuss', 'escape', 'get caught', 'perfectly', 'illustrate', 'phenomenon', 'due to', 'available', 'alternative', 'intention', 'solution', 'indefinitely', 'various', 'factor', 'lead to', 'satisfied with', 'arise', 'erroneous', 'potential', 'catastrophic', 'consequence', 'impact', 'career', 'productivity', 'generally', 'confident', 'involve', 'huge stakes', 'apply for', 'position', 'office cleaner', 'stocking', 'supply', 'designate', 'facility area', 'observe', 'document', 'fill out', 'door to door round', 'succeed', 'capital', 'repeat', 'operation', 'realize', 'survive', 'triple', 'shortly after', 'cart', 'fleet', 'delivery vehicle', 'reply', 'nor', 'add', 'require', 'hire', 'with no hope at all', 'several days later', 'life insurance', 'insurance broker', 'conversation', 'conclude', 'curiously', 'and yet', 'empire', 'for a while', '  ',
+        ];
+
+        function updateTimer(time) {
+            timerElement.textContent = `남은 시간 : ${time} 초`;
+        }
+
+        function generateWord() {
+            const word = mean[Math.floor(Math.random() * mean.length)];
+            const wordElement = document.createElement('div');
+            t += 1;
+            if (t % 3 == 0) {
+                wordElement.style.backgroundColor = "#FFFF96";
+            }
+            else if (t % 3 == 1) {
+                wordElement.style.backgroundColor = "#FFD1B7";
+            }
+            else {
+                wordElement.style.backgroundColor = "#AFFFEE";
+            }
+            wordElement.textContent = word;
+            wordElement.classList.add('word');
+            wordElement.dataset.word = word;
+            wordElement.style.left = `${Math.random() * (gameBoard.clientWidth - 100)}px`;
+            gameBoard.appendChild(wordElement);
+            let top = 0;
+            function moveWord() {
+                if (top < gameBoard.clientHeight) {
+                    top += wordSpeed;
+                    wordElement.style.top = `${top}px`;
+                    requestAnimationFrame(moveWord);
+                } else {
+                    wordElement.remove();
+                }
+            }
+            moveWord();
+        }
+
+        function startGame() {
+            score = 0;
+            userInput.style.display = 'block';
+            gameScore.textContent = `점수 : ${score}`;
+            updateTimer(gameDuration);
+            gameTimer = setInterval(generateWord, 1000 / wordsPerSecond);
+            let remainingTime = gameDuration;
+            gameDurationTimer = setInterval(() => {
+                remainingTime--;
+                if (remainingTime >= 0) {
+                    updateTimer(remainingTime);
+                } else {
+                    gameOver();
+                }
+            }, 1000);
+            document.addEventListener('keydown', wordKeydownHandler);
+            userInput.addEventListener('keydown', userInputKeydownHandler);
+        }
+
+        function gameOver() {
+            clearInterval(gameTimer);
+            clearInterval(gameDurationTimer);
+            document.removeEventListener('keydown', wordKeydownHandler);
+            userInput.removeEventListener('keydown', userInputKeydownHandler);
+            gameOverMessage.textContent = `게임 종료 !! 당신의 점수는 ${score}점 입니다. `;
+            gameOverMessage.style.display = 'block';
+            playAgainBtn.style.display = 'block';
+            userInput.style.display = 'none';
+
+            // Remove all word elements from the game board
+            const wordElements = document.querySelectorAll('.word');
+            wordElements.forEach(wordElement => {
+                wordElement.remove();
+            });
+        }
+
+
+        function wordKeydownHandler(event) {
+            const pressedKey = event.key.toUpperCase();
+            const wordElements = document.querySelectorAll('.word');
+            for (let i = 0; i < wordElements.length; i++) {
+                const wordElement = wordElements[i];
+                const word = wordElement.dataset.word.toUpperCase();
+                if (pressedKey === word) {
+                    wordElement.remove();
+                    score++;
+                    gameScore.textContent = `점수 : ${score}`;
+                    break; // Stop loop after removing the first matching word
+                }
+            }
+        }
+
+        function userInputKeydownHandler(event) {
+            if (event.key === 'Enter') {
+                let inputWord = userInput.value.trim().toUpperCase(); // 앞뒤 공백 제거
+                const wordElements = document.querySelectorAll('.word'); // 한자
+                //um.indexOf(inputWord)
+                for (let i = 0; i < wordElements.length; i++) {
+                    const word = wordElements[i].dataset.word.toUpperCase();
+
+                    if (mean[eng.indexOf(inputWord)] === word) {
+                        wordElements[i].remove();
+                        score++;
+                        gameScore.textContent = `점수 : ${score}`;
+                        break;
+                    }
+                }
+                userInput.value = '';
+            }
+        }
+
+        playAgainBtn.addEventListener('click', () => {
+            gameOverMessage.style.display = 'none';
+            playAgainBtn.style.display = 'none';
+            startGame();
+        });
+
+        // Add a click event listener to start the game when the button is clicked
+        const startButton = document.createElement('button');
+        startButton.textContent = '게임 시작';
+        startButton.classList.add('btn');
+        startButton.addEventListener('click', () => {
+            startGame();
+            startButton.style.display = 'none'; // Hide the button once the game starts
+        });
+        document.getElementById('window-content').appendChild(startButton);
+
+
+    </script>
+</body>
+
+</html>
