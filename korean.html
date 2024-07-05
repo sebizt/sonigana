@@ -170,7 +170,7 @@
                 <div id="game-score"></div>
                 <div id="game-over-message" style="display: none;"></div>
             </div>
-            <input type="text" id="user-input" style="display: none;" placeholder="音 입력 ..">
+            <input type="text" id="user-input" style="display: none;" placeholder="표준발음 입력 ..">
             <button class="btn" id="play-again-btn" style="display: none;">다시 시작</button>
         </div>
     </div>
@@ -200,7 +200,7 @@
         }
 
         function generateWord() {
-            const word = hanja[Math.floor(Math.random() * hanja.length)];
+            const word = dane[Math.floor(Math.random() * dane.length)];
             const wordElement = document.createElement('div');
             t += 1;
             if (t % 3 == 0) {
@@ -290,7 +290,7 @@
                 for (let i = 0; i < wordElements.length; i++) {
                     const word = wordElements[i].dataset.word.toUpperCase();
 
-                    if (hanja[um.indexOf(inputWord)] === word) {
+                    if (dane[pyojunbalum.indexOf(inputWord)] === word) {
                         wordElements[i].remove();
                         score++;
                         gameScore.textContent = `점수 : ${score}`;
